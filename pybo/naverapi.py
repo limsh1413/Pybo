@@ -49,4 +49,3 @@ def navermovie(moviename):
 
     return jsontemp
 
-print(navermovie("스파이럴"))
