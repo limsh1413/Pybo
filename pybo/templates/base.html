@@ -22,6 +22,9 @@
       {% if g.user %}
       <ul class="navbar-nav">
           <li class="navbar-nav">
+              <a class="nav-link" href="{{ url_for('chat.Help') }}">HELP</a>
+          </li>
+          <li class="navbar-nav">
               <a class="nav-link" href="{{ url_for('auth.logout')}}">{{g.user.username}}로그아웃</a>
           </li>
           <li class="navbar-nav">
@@ -33,9 +36,15 @@
           <li class="navbar-nav">
               <a class="nav-link" href="{{ url_for('naver.movie')}}">영화검색</a>
           </li>
+          <li class="navbar-nav">
+              <a class="nav-link" href="{{ url_for('chat.Bot') }}">챗봇</a>
+          </li>
       </ul>
       {%else%}}
       <ul class="navbar-nav">
+          <li class="navbar-nav">
+              <a class="nav-link" href="{{ url_for('chat.Help') }}">HELP</a>
+          </li>
           <li class="navbar-nav">
               <a class="nav-link" href="{{ url_for('auth.signup')}}">계정생성</a>
           </li>
@@ -51,10 +60,22 @@
           <li class="navbar-nav">
               <a class="nav-link" href="{{ url_for('naver.movie')}}">영화검색</a>
           </li>
+          <li class="navbar-nav">
+              <a class="nav-link" href="{{ url_for('chat.Bot') }}">챗봇</a>
+          </li>
       </ul>
       {% endif %}
   </div>
 </nav>
+
+<script src="https://www.gstatic.com/dialogflow-console/fast/messenger/bootstrap.js?v=1"></script>
+<df-messenger
+  intent="WELCOME"
+  chat-title="restaurantchat"
+  agent-id="546ef10c-15b3-40b5-baae-2683a3e63f19"
+  language-code="ko"
+></df-messenger>
+
 {% block content %}
 {% endblock %}
 

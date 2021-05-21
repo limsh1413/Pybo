@@ -1,62 +1,180 @@
-from flask import Blueprint,render_template,url_for
+from flask import Blueprint, render_template, url_for, request, jsonify
+from werkzeug.utils import redirect
+
 from pybo.models import Question,Answer
 from datetime import datetime
 from pybo import db
-from werkzeug.utils import redirect
+from pybo.movieapi import Mrank
+from pybo.naverapi import navermovie, navershop
+from pybo.weatherapi import get_wdata
+
 
 bp = Blueprint('main', __name__, url_prefix='/')
 
 @bp.route('/test')
 def test():
     for i in range(100):
-        q = Question(subject='테스트 데이터 [%03d]'%i, content='내용무', create_date=datetime.now())
+        q = Question(subject='테스트 데이터 [%03d]'%i, content='내용무',create_date=datetime.now())
         db.session.add(q)
     db.session.commit()
+
+
+
     return redirect(url_for('main.index'))
 
-
-
 @bp.route('/hello')
-def main1():
-    q = Question(subject='pybo가 무엇인가요?', content='pybo에 대해서 알고 싶습니다.', create_date=datetime.now())
-    #result=Question.query.filter(Question.id==1).all()
-    #result=Question.query.get(1)  # id(primary key) 1번 데이터를 가져옴
-    #result=Question.query.filter(Question.subject.like('%무엇%')).all()
-    #result=Question.query.filter(Question.username.like('%김%')).all()
+def hello_pybo():
+    #result = Question.query.filter(Question.id==1).all()
+    #result = Question.query.get(1) #id(primary key)가 1번데이터를 가져옴
+    #result = Question.query.filter(Question.subject.like('%무엇%')).all()
+    #result = Question.query.filter(Question.username.like('%김%')).all()
     #print(result)
-    #result.subject = '파이보 정말 재밌어요'
+    #result = Question.query.get(1)
+    #print(result.subject)
+    #result.subject = '파이보 재밌어요'
     #db.session.commit()
-    #result=Question.query.get(1)
+    #result = Question.query.get(1)
     #db.session.delete(result)
     #db.session.commit()
 
-
-    # q = Question.query.get(5)
-    #
-    # a = Answer(question = q, content='답변 5번', create_date=datetime.now())
-    db.session.add(q)
-    db.session.commit()
-    #
-    #
-    # q=Question.query.get(5)
-    # db.session.delete(q)
-    # db.session.commit()
-
+    #q = Question.query.get(2)
+    #print(q)
+    #a = Answer(question = q, content='답변 3번',create_date=datetime.now())
+    #db.session.add(a)
+    #db.session.commit()
 
     #q = Question.query.get(2)
+    #result = q.answer_set
+    #print(result)
 
-    # 2번 질문에 대한 답변 데이터를 가져오세요.
-    # q = Question.query.get(5)
-    # result=q.answer_set
-    # print(result)
+    #q = Question.query.get(2)
+    #db.session.delete(q)
+    #db.session.commit()
 
-    # q=Question.query.get(2)
-    # db.session.delete(q)
-    # db.session.commit()
+    #q = Question.query.get(5)
+
+    #db.session.delete(q)
+    #db.session.commit()
+
+
+    #2번 질문에 대한 답변 데이터를 가져오세요.
+
 
     return 'Hello, Pybo!'
-
 
 @bp.route('/')
 def index():
     return redirect(url_for('question._list'))
+
+
+@bp.route('/webhook',methods=['GET','POST'])
+def webhook():
+    req = request.get_json()
+    print('---------1')
+    if req['queryResult']['intent']['displayName'] =='movie ranking':
+        rankdata = Mrank()
+
+        result = ''
+        count = 1
+        for temp in rankdata:
+            result = result + str(count) + '위 : '+temp['title']
+            if count==3:
+                break
+            count += 1
+    elif req['queryResult']['intent']['displayName'] =='movie info - custom':
+
+        movieresult = navermovie(req['queryResult']['queryText'])
+
+        moviedata = movieresult['items'][0]
+
+
+        return movie_info(moviedata['image'],moviedata['title'],moviedata['link'],
+                          '감독:'+moviedata['director']+' 출연자'+moviedata['actor'])
+    elif req['queryResult']['intent']['displayName'] == 'Weather info - location':
+        print('---------2')
+        wdata = get_wdata(req['queryResult']['queryText'])
+        print('---------3')
+        print(wdata)
+        return weather_info(wdata)
+    elif req['queryResult']['intent']['displayName'] =='thing info - custom':
+        thingresult = navershop(req['queryResult']['queryText'])
+        return thing_info(thingresult['items'])
+
+def movie_info(imgurl, title,link,subtitle):
+    response_json = jsonify(
+        fulfillment_text=title,
+        fulfillment_messages=[
+            {
+                "payload": {
+                    "richContent": [[
+                        {
+                            "type": "image",
+                            "rawUrl": imgurl
+                        },
+                        {
+                            "type": "info",
+                            "title": title,
+                            "actionLink": link,
+                            "subtitle": subtitle
+                        }
+                    ]]
+                }
+            }
+        ]
+    )
+
+    return response_json
+def weather_info(wdata):
+    strdata = ''
+    print('---------4')
+    if '지역' in wdata:
+        strdata += wdata['지역']+'의'
+    if '현재일기' in wdata and len(wdata['현재일기'])>1:
+        print(wdata['현재일기'])
+        strdata += '현재일기는'+ wdata['현재일기']
+    if '현재기온' in wdata and len(wdata['현재기온'])>1:
+        strdata += '현재기온은'+ wdata['현재기온']
+    if '일강수' in wdata and len(wdata['일강수'])>1:
+        strdata += '일강수는'+ wdata['일강수']
+    strdata += '입니다.'
+    
+    response_json = jsonify(
+        fulfillment_text=strdata
+    )
+
+    return response_json
+
+def thing_info(items):
+    plist=[]    # 제품들을 넣어놓는 리스트 [[{}]]
+    for temp in items:  # 네이버api 에서 상품정보를 가져온다. items 키에 들어있음
+        imgurl = temp['image']
+        title = temp['title']
+        link = temp['link']
+        subtitle = '최저가 :' + temp['lprice']
+        listdata = [
+            {
+                "type": "image",
+                "rawUrl": imgurl
+            },
+            {
+                "type": "info",
+                "title": title,
+                "actionLink": link,
+                "subtitle": subtitle
+            }
+        ]
+
+        plist.append(listdata)
+
+    response_json = jsonify(
+        fulfillment_text=title,
+        fulfillment_messages=[
+            {
+                "payload": {
+                    "richContent": plist
+                }
+            }
+        ]
+    )
+
+    return response_json

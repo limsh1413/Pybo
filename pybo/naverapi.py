@@ -49,3 +49,24 @@ def navermovie(moviename):
 
     return jsontemp
 
+def navershop(thingname):
+
+    client_id = "JZTnikyvzsfKdTQuMfe3"
+    client_secret = "8ZzzPSDLHB"
+
+    encText = urllib.parse.quote(thingname)
+    url = "https://openapi.naver.com/v1/search/shop?query=" + encText # json 결과
+    request = urllib.request.Request(url)
+    request.add_header("X-Naver-Client-Id",client_id)
+    request.add_header("X-Naver-Client-Secret",client_secret)
+    response = urllib.request.urlopen(request)
+    rescode = response.getcode()
+    if(rescode==200):
+        response_body = response.read()
+        jsontemp=json.loads(response_body.decode('utf-8'))
+
+    else:
+        print("Error Code:" + rescode)
+
+    print(jsontemp)
+    return jsontemp

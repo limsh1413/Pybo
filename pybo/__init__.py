@@ -25,6 +25,8 @@ from pybo.views import question_views
 from pybo.views import answer_views
 from pybo.views import movie_views
 from .filter import format_datetime
+from pybo.views import chat_views
+
 
 app.jinja_env.filters['datetime']=format_datetime
 
@@ -35,3 +37,4 @@ app.register_blueprint(question_views.bp)
 app.register_blueprint(answer_views.bp)
 app.register_blueprint(auth_views.bp)
 app.register_blueprint(movie_views.bp)
+app.register_blueprint(chat_views.bp)
